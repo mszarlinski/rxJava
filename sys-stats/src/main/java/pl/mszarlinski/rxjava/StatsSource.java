@@ -9,7 +9,7 @@ public class StatsSource {
 
     final private static Random r = new Random();
 
-    public IoStat getStats() {
-        return IoStat.of(Thread.currentThread().getName(), r.nextDouble());
+    public Stat getStats() {
+        return Stat.of(Thread.currentThread().getName(), r.nextDouble());
     }
 }

@@ -1,5 +1,8 @@
 package pl.mszarlinski.rxjava;
 
+import java.util.List;
+import pl.mszarlinski.rxjava.producer.IStatsProducer;
+import pl.mszarlinski.rxjava.producer.impl.UsedMemoryProducer;
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
@@ -7,19 +10,26 @@ import rx.schedulers.Schedulers;
 
 import java.util.concurrent.TimeUnit;
 
+import static java.util.Arrays.*;
+
 /**
  * Created by Maciej on 2015-01-19.
  */
-public class StatsStream implements Observable.OnSubscribe<IoStat> {
+public class StatsStream implements Observable.OnSubscribe<Stat> {
+
     private static final long INITIAL_DELAY_ONE_SEC = 1000L;
+
     private static final TimeUnit TIME_UNIT_MILLIS = TimeUnit.MILLISECONDS;
 
-    private final StatsSource statsSource = new StatsSource();
+    private final List<IStatsProducer> statsProducerList = asList(
+            new UsedMemoryProducer()
+    );
 
     private long period = 100L;
 
     private boolean isInfinite = true;
-    private long numberOfElements = 0L;
+
+    private long numberOfLoops = 0L;
 
     private Scheduler scheduler = Schedulers.computation();
 
@@ -31,7 +41,7 @@ public class StatsStream implements Observable.OnSubscribe<IoStat> {
 
     public static StatsStream finiteWithPeriod(long numberOfElements, long period) {
         StatsStream ss = new StatsStream();
-        ss.numberOfElements = numberOfElements;
+        ss.numberOfLoops = numberOfElements;
         ss.period = period;
         ss.isInfinite = false;
         return ss;
@@ -42,18 +52,23 @@ public class StatsStream implements Observable.OnSubscribe<IoStat> {
      *
      * @param subscriber
      */
-    public void call(final Subscriber<? super IoStat> subscriber) {
+    public void call(final Subscriber<? super Stat> subscriber) {
         final Scheduler.Worker worker = scheduler.createWorker();
         subscriber.add(worker);
         worker.schedulePeriodically(() -> {
-            if (!isInfinite && numberOfElements <= 0) {
+            if (!isInfinite && numberOfLoops <= 0) {
                 worker.unsubscribe();
                 subscriber.onCompleted();
             }
 
             try {
-                subscriber.onNext(statsSource.getStats());
-                if (!isInfinite) numberOfElements--;
+                statsProducerList.forEach(p ->
+                    subscriber.onNext(p.produceStat())
+                );
+
+                if (!isInfinite) {
+                    numberOfLoops--;
+                }
             } catch (Throwable t) {
                 try {
                     subscriber.onError(t);
