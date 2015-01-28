@@ -23,4 +23,12 @@ public class Stat {
     public double getValue() {
         return value;
     }
+
+    @Override
+    public String toString() {
+        return "Stat{" +
+                "name='" + name + '\'' +
+                ", value=" + value +
+                '}';
+    }
 }

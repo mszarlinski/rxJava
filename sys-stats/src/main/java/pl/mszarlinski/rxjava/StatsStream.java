@@ -2,6 +2,7 @@ package pl.mszarlinski.rxjava;
 
 import java.util.List;
 import pl.mszarlinski.rxjava.producer.IStatsProducer;
+import pl.mszarlinski.rxjava.producer.impl.CpusLoadProducer;
 import pl.mszarlinski.rxjava.producer.impl.UsedMemoryProducer;
 import rx.Observable;
 import rx.Scheduler;
@@ -22,7 +23,8 @@ public class StatsStream implements Observable.OnSubscribe<Stat> {
     private static final TimeUnit TIME_UNIT_MILLIS = TimeUnit.MILLISECONDS;
 
     private final List<IStatsProducer> statsProducerList = asList(
-            new UsedMemoryProducer()
+            new UsedMemoryProducer(),
+            new CpusLoadProducer()
     );
 
     private long period = 100L;
@@ -63,7 +65,7 @@ public class StatsStream implements Observable.OnSubscribe<Stat> {
 
             try {
                 statsProducerList.forEach(p ->
-                    subscriber.onNext(p.produceStat())
+                                subscriber.onNext(p.produceStat())
                 );
 
                 if (!isInfinite) {
